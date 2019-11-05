@@ -65,8 +65,7 @@ func HandleRequest(ctx context.Context) error {
 
 	if httpResp.StatusCode != expectedResponseCode {
 		errorString := "Incorrect status code received from " + targetURL + ": " + strconv.Itoa(httpResp.StatusCode)
-		fmt.Println("Error string: ", errorString)
-		fmt.Println("Phone number", targetPhoneNumber)
+		fmt.Println("Error: ", errorString)
 
 		// send text
 		params := &sns.PublishInput{
@@ -77,7 +76,7 @@ func HandleRequest(ctx context.Context) error {
 
 		if err != nil {
 			if awsErr, ok := err.(awserr.Error); ok {
-				fmt.Printf("AWS Publish error: %v", awsErr.Code())
+				fmt.Printf("AWS Publish error: %v %v \n", awsErr.Code(), awsErr.Message())
 			} else {
 				fmt.Printf("Error processing AWS publish error: %v", err.Error())
 			}
