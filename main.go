@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 )
 
 // HandleRequest sends an HTTP request to the specified website and sends a text if all is not well
-func HandleRequest() error {
+func HandleRequest(ctx context.Context) error {
 	targetURL := os.Getenv("TARGET_URL")
 	fmt.Printf("Starting health check for %v", targetURL)
 
@@ -63,7 +64,8 @@ func HandleRequest() error {
 
 	if httpResp.StatusCode != expectedResponseCode {
 		errorString := "Incorrect status code received from " + targetURL + ": " + strconv.Itoa(httpResp.StatusCode)
-		fmt.Println(errorString)
+		fmt.Println("Error string: ", errorString)
+		fmt.Println("Phone number", targetPhoneNumber)
 
 		// send text
 		params := &sns.PublishInput{
@@ -84,6 +86,23 @@ func HandleRequest() error {
 		fmt.Println("Publish response: ", resp)
 		return nil
 	}
+
+	params := &sns.PublishInput{
+		Message:     aws.String("Health check successfully completed for " + targetURL),
+		PhoneNumber: aws.String(targetPhoneNumber),
+	}
+	resp, err := svc.Publish(params)
+
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			fmt.Printf("AWS Publish error: %v", awsErr.Code())
+		} else {
+			fmt.Printf("Error processing AWS publish error: %v", err.Error())
+		}
+		return nil
+	}
+
+	fmt.Println("Publish response: ", resp)
 
 	body, readError := ioutil.ReadAll(httpResp.Body)
 	if readError != nil {
